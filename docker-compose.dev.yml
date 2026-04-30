@@ -45,6 +45,42 @@ services:
     networks:
       - bookstore-network
 
+  cart-redis:
+    image: redis:7-alpine
+    container_name: cart-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - cart_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - bookstore-network
+
+  news-db:
+    image: mysql:8.0
+    container_name: news-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: bookstore_news
+      MYSQL_USER: bookstore
+      MYSQL_PASSWORD: bookstore
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - news_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - bookstore-network
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -112,8 +148,19 @@ services:
     container_name: cart-service
     ports:
       - "8083:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      REDIS_HOST: cart-redis
+      REDIS_PORT: 6379
+      BOOK_SERVICE_URL: http://book-service:8080
+      SPRING_RABBITMQ_HOST: rabbitmq
     networks:
       - bookstore-network
+    depends_on:
+      cart-redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
 
   order-service:
     image: truongikpk/bookstore-order-service:v1.0.0
@@ -160,8 +207,24 @@ services:
     container_name: news-service
     ports:
       - "8089:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://news-db:3306/bookstore_news?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_RABBITMQ_HOST: rabbitmq
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
     networks:
       - bookstore-network
+    depends_on:
+      news-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
 
   ai-service:
     image: truongikpk/bookstore-ai-service:v1.0.0
@@ -194,4 +257,6 @@ networks:
 volumes:
   user_mysql_data:
   book_mysql_data:
+  news_mysql_data:
+  cart_redis_data:
   rabbitmq-data:
