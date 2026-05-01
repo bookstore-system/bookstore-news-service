@@ -1,8 +1,30 @@
 version: '3.8'
 
 services:
+  news-db:
+    image: mysql:8.0
+    container_name: news-db
+    restart: always
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_DATABASE: bookstore_news
+      MYSQL_USER: bookstore
+      MYSQL_PASSWORD: bookstore
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - news_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - bookstore-network
+
   news-service:
-    build: 
+    build:
       context: .
       target: build
     container_name: news-service
@@ -14,9 +36,22 @@ services:
     command: mvn spring-boot:run -Dspring-boot.run.profiles=docker
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://news-db:3306/bookstore_news?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    depends_on:
+      news-db:
+        condition: service_healthy
     networks:
       - bookstore-network
 
 networks:
   bookstore-network:
     external: true
+
+volumes:
+  news_mysql_data:
