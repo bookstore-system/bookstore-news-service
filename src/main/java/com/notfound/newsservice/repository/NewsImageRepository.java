@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface NewsImageRepository extends JpaRepository<NewsImage, UUID> {
+public interface NewsImageRepository extends JpaRepository<NewsImage, Long> {
 
     List<NewsImage> findByNewsIdOrderByPriorityAsc(UUID newsId);
 }

@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -15,7 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class NewsImageResponse {
 
-    private UUID id;
+    private Long id;
     private String url;
     private Integer priority;
 

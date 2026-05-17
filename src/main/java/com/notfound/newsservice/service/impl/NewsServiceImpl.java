@@ -297,7 +297,7 @@ public class NewsServiceImpl implements NewsService {
 
     @Override
     @Transactional
-    public void deleteNewsImage(UUID newsId, UUID imageId) {
+    public void deleteNewsImage(UUID newsId, Long imageId) {
         if (!newsRepository.existsById(newsId)) {
             throw new NewsNotFoundException(newsId);
         }
@@ -503,7 +503,7 @@ public class NewsServiceImpl implements NewsService {
                 .collect(Collectors.toList());
 
         return NewsResponse.builder()
-                .id(n.getId())
+                .newsID(n.getId())
                 .title(n.getTitle())
                 .summary(n.getSummary())
                 .content(n.getContent())
