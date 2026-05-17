@@ -18,7 +18,7 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NewsResponse {
 
-    private UUID id;
+    private UUID newsID;
     private String title;
     private String summary;
     private String content;

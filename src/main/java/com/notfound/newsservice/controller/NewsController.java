@@ -8,7 +8,11 @@ import com.notfound.newsservice.model.dto.response.NewsResponse;
 import com.notfound.newsservice.model.dto.response.NewsStatsResponse;
 import com.notfound.newsservice.model.enums.NewsStatus;
 import com.notfound.newsservice.service.NewsService;
+import com.notfound.newsservice.config.OpenApiConfig;
 import com.notfound.newsservice.util.UserContext;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,15 +27,17 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/news")
+@RequestMapping("/api/v1/news")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Tin tức", description = "CRUD & đọc tin; GET công khai; Admin cần `X-User-Role: ROLE_ADMIN`")
 public class NewsController {
 
     private final NewsService newsService;
     private final UserContext userContext;
 
     @GetMapping
+    @Operation(summary = "Danh sách tin (lọc phân trang)")
     public ApiResponse<Page<NewsResponse>> getAllNews(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -57,6 +63,7 @@ public class NewsController {
     }
 
     @GetMapping("/published")
+    @Operation(summary = "Tin đã xuất bản")
     public ApiResponse<Page<NewsResponse>> getPublished(@RequestParam(defaultValue = "0") int page,
                                                         @RequestParam(defaultValue = "10") int size) {
         return ApiResponse.success("Lấy tin đã xuất bản",
@@ -64,12 +71,14 @@ public class NewsController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Chi tiết tin (tăng lượt xem)")
     public ApiResponse<NewsResponse> getById(@PathVariable UUID id) {
         return ApiResponse.success("Lấy chi tiết tin tức",
                 newsService.getNewsById(id));
     }
 
     @GetMapping("/search")
+    @Operation(summary = "Tìm tin theo tiêu đề")
     public ApiResponse<Page<NewsResponse>> search(@RequestParam String title,
                                                   @RequestParam(defaultValue = "0") int page,
                                                   @RequestParam(defaultValue = "10") int size) {
@@ -78,6 +87,7 @@ public class NewsController {
     }
 
     @GetMapping("/author/{authorId}")
+    @Operation(summary = "Tin theo tác giả (authorId)")
     public ApiResponse<Page<NewsResponse>> getByAuthor(@PathVariable UUID authorId,
                                                        @RequestParam(defaultValue = "0") int page,
                                                        @RequestParam(defaultValue = "10") int size) {
@@ -86,6 +96,8 @@ public class NewsController {
     }
 
     @GetMapping("/my-news")
+    @Operation(summary = "Tin của tôi")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ID)
     public ApiResponse<Page<NewsResponse>> myNews(@RequestParam(defaultValue = "0") int page,
                                                    @RequestParam(defaultValue = "10") int size) {
         UUID userId = userContext.requireUserId();
@@ -94,6 +106,7 @@ public class NewsController {
     }
 
     @GetMapping("/category/{category}")
+    @Operation(summary = "Tin theo danh mục")
     public ApiResponse<Page<NewsResponse>> getByCategory(@PathVariable String category,
                                                          @RequestParam(defaultValue = "0") int page,
                                                          @RequestParam(defaultValue = "10") int size) {
@@ -102,6 +115,7 @@ public class NewsController {
     }
 
     @GetMapping("/tag/{tag}")
+    @Operation(summary = "Tin theo tag")
     public ApiResponse<Page<NewsResponse>> getByTag(@PathVariable String tag,
                                                     @RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "10") int size) {
@@ -110,6 +124,7 @@ public class NewsController {
     }
 
     @GetMapping("/advanced-search")
+    @Operation(summary = "Tìm kiếm nâng cao")
     public ApiResponse<Page<NewsResponse>> advancedSearch(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String category,
@@ -130,6 +145,11 @@ public class NewsController {
     }
 
     @PostMapping
+    @Operation(
+            summary = "Tạo tin (Admin)",
+            description = "Cần `X-User-Id` (UUID), `X-User-Role: ROLE_ADMIN`, tùy chọn `X-User-Name`. Dùng Authorize trên Swagger UI."
+    )
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<NewsResponse> createNews(@Valid @RequestBody CreateNewsRequest request) {
         UUID userId = userContext.requireUserId();
         userContext.requireAdmin();
@@ -140,6 +160,8 @@ public class NewsController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Cập nhật tin (Admin)")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<NewsResponse> updateNews(@PathVariable UUID id,
                                                 @Valid @RequestBody UpdateNewsRequest request) {
         userContext.requireAdmin();
@@ -148,6 +170,8 @@ public class NewsController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Xóa tin (Admin)")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<Void> deleteNews(@PathVariable UUID id) {
         userContext.requireAdmin();
         newsService.deleteNews(id);
@@ -155,6 +179,8 @@ public class NewsController {
     }
 
     @PutMapping("/{id}/publish")
+    @Operation(summary = "Xuất bản (Admin)")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<NewsResponse> publish(@PathVariable UUID id) {
         userContext.requireAdmin();
         return ApiResponse.success("Xuất bản tin tức thành công",
@@ -162,6 +188,8 @@ public class NewsController {
     }
 
     @PutMapping("/{id}/archive")
+    @Operation(summary = "Lưu trữ (Admin)")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<NewsResponse> archive(@PathVariable UUID id) {
         userContext.requireAdmin();
         return ApiResponse.success("Lưu trữ tin tức thành công",
@@ -169,6 +197,8 @@ public class NewsController {
     }
 
     @PutMapping("/{id}/restore")
+    @Operation(summary = "Khôi phục (Admin)")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<NewsResponse> restore(@PathVariable UUID id) {
         userContext.requireAdmin();
         return ApiResponse.success("Khôi phục tin tức thành công",
@@ -176,6 +206,7 @@ public class NewsController {
     }
 
     @GetMapping("/stats/count")
+    @Operation(summary = "Đếm tin theo trạng thái (public)")
     public ApiResponse<NewsCountResponse> getCount() {
         long draft = newsService.countByStatus(NewsStatus.DRAFT);
         long published = newsService.countByStatus(NewsStatus.PUBLISHED);
@@ -190,6 +221,8 @@ public class NewsController {
     }
 
     @GetMapping("/statistics")
+    @Operation(summary = "Thống kê chi tiết (Admin)")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<NewsStatsResponse> getStatistics() {
         userContext.requireAdmin();
         return ApiResponse.success("Lấy thống kê tin tức",
@@ -197,6 +230,8 @@ public class NewsController {
     }
 
     @PostMapping("/{newsId}/images")
+    @Operation(summary = "Upload ảnh tin (Admin, multipart)")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<NewsResponse> uploadImages(@PathVariable UUID newsId,
                                                   @RequestParam("images") List<MultipartFile> images) {
         userContext.requireAdmin();
@@ -205,8 +240,10 @@ public class NewsController {
     }
 
     @DeleteMapping("/{newsId}/images/{imageId}")
+    @Operation(summary = "Xóa ảnh tin (Admin)")
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<Void> deleteImage(@PathVariable UUID newsId,
-                                         @PathVariable UUID imageId) {
+                                         @PathVariable Long imageId) {
         userContext.requireAdmin();
         newsService.deleteNewsImage(newsId, imageId);
         return ApiResponse.success("Xoá ảnh thành công", null);

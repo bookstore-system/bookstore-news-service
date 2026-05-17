@@ -40,7 +40,7 @@ class NewsControllerWebMvcTest {
         Page<NewsResponse> page = new PageImpl<>(List.of(), Pageable.unpaged(), 0);
         Mockito.when(newsService.getAllNews(any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/news"))
+        mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
@@ -50,7 +50,7 @@ class NewsControllerWebMvcTest {
         Page<NewsResponse> page = new PageImpl<>(List.of(), Pageable.unpaged(), 0);
         Mockito.when(newsService.getPublishedNews(any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/news/published"))
+        mockMvc.perform(get("/api/v1/news/published"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

@@ -54,7 +54,7 @@ public interface NewsService {
 
     NewsResponse uploadNewsImages(UUID newsId, List<MultipartFile> images);
 
-    void deleteNewsImage(UUID newsId, UUID imageId);
+    void deleteNewsImage(UUID newsId, Long imageId);
 
     NewsStatsResponse getNewsStatistics();
 }

@@ -29,6 +29,14 @@ Microservice quản lý tin tức (news) cho hệ thống Bookstore. Hỗ trợ 
 > - `X-User-Name` (String) — tuỳ chọn (sẽ được lưu vào `news.author_name`)
 > - `X-User-Role` (`ROLE_USER` hoặc `ROLE_ADMIN`)
 
+### Swagger UI (SpringDoc OpenAPI 3)
+
+- **UI:** `http://localhost:8089/swagger-ui/index.html`
+- **OpenAPI JSON:** `http://localhost:8089/v3/api-docs`
+- GET công khai không cần header; thao tác Admin dùng **Authorize** (`X-User-Id`, `X-User-Role`, `X-User-Name`).
+
+Production có thể tắt: `springdoc.api-docs.enabled=false` và `springdoc.swagger-ui.enabled=false`.
+
 ## 3. Biến môi trường
 
 | Biến | Mặc định (local) | Mặc định (docker) | Mô tả |
@@ -107,38 +115,38 @@ File này chạy đầy đủ infra: `user-db`, `book-db`, `news-db`, `cart-redi
 #   NEWS_ID=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 
 # 1) Lấy danh sách news (paging + sort)
-curl "http://localhost:8089/api/news?page=0&size=10&sort=createdAt&order=desc"
+curl "http://localhost:8089/api/v1/news?page=0&size=10&sort=createdAt&order=desc"
 
 # 2) Chỉ news đã PUBLISHED
-curl "http://localhost:8089/api/news/published?page=0&size=10"
+curl "http://localhost:8089/api/v1/news/published?page=0&size=10"
 
 # 3) Chi tiết 1 news (đồng thời tăng views)
-curl http://localhost:8089/api/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+curl http://localhost:8089/api/v1/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 
 # 4) Search theo title
-curl "http://localhost:8089/api/news/search?title=spring"
+curl "http://localhost:8089/api/v1/news/search?title=spring"
 
 # 5) Lấy theo tác giả
-curl http://localhost:8089/api/news/author/11111111-1111-1111-1111-111111111111
+curl http://localhost:8089/api/v1/news/author/11111111-1111-1111-1111-111111111111
 
 # 6) Lấy theo category
-curl http://localhost:8089/api/news/category/Tech
+curl http://localhost:8089/api/v1/news/category/Tech
 
 # 7) Lấy theo tag (full-text-like)
-curl http://localhost:8089/api/news/tag/spring-boot
+curl http://localhost:8089/api/v1/news/tag/spring-boot
 
 # 8) Advanced search (kết hợp keyword + category + status)
-curl "http://localhost:8089/api/news/advanced-search?keyword=spring&category=Tech&status=PUBLISHED"
+curl "http://localhost:8089/api/v1/news/advanced-search?keyword=spring&category=Tech&status=PUBLISHED"
 
 # 9) Đếm theo trạng thái (public)
-curl http://localhost:8089/api/news/stats/count
+curl http://localhost:8089/api/v1/news/stats/count
 ```
 
 ### 6.2. Endpoint admin/owner (cần header `X-User-Role: ROLE_ADMIN`)
 
 ```bash
 # 10) Tạo tin
-curl -X POST http://localhost:8089/api/news \
+curl -X POST http://localhost:8089/api/v1/news \
   -H "Content-Type: application/json" \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Name: Admin" -H "X-User-Role: ROLE_ADMIN" \
   -d '{
@@ -152,29 +160,29 @@ curl -X POST http://localhost:8089/api/news \
       }'
 
 # 11) Cập nhật
-curl -X PUT http://localhost:8089/api/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa \
+curl -X PUT http://localhost:8089/api/v1/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa \
   -H "Content-Type: application/json" \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN" \
   -d '{"title":"Spring Boot 4 - bản cập nhật","status":"PUBLISHED"}'
 
 # 12) Publish / Archive / Restore
-curl -X PUT http://localhost:8089/api/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/publish \
+curl -X PUT http://localhost:8089/api/v1/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/publish \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN"
-curl -X PUT http://localhost:8089/api/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/archive \
+curl -X PUT http://localhost:8089/api/v1/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/archive \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN"
-curl -X PUT http://localhost:8089/api/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/restore \
+curl -X PUT http://localhost:8089/api/v1/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/restore \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN"
 
 # 13) Xoá
-curl -X DELETE http://localhost:8089/api/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa \
+curl -X DELETE http://localhost:8089/api/v1/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN"
 
 # 14) Thống kê (chỉ admin)
-curl http://localhost:8089/api/news/statistics \
+curl http://localhost:8089/api/v1/news/statistics \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN"
 
 # 15) My News (theo X-User-Id)
-curl http://localhost:8089/api/news/my-news \
+curl http://localhost:8089/api/v1/news/my-news \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN"
 ```
 
@@ -182,12 +190,12 @@ curl http://localhost:8089/api/news/my-news \
 
 ```bash
 # 16) Upload nhiều ảnh cho 1 news
-curl -X POST http://localhost:8089/api/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/images \
+curl -X POST http://localhost:8089/api/v1/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/images \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN" \
   -F "images=@./pic1.jpg" -F "images=@./pic2.jpg"
 
 # 17) Xoá 1 ảnh khỏi news
-curl -X DELETE http://localhost:8089/api/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/images/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb \
+curl -X DELETE http://localhost:8089/api/v1/news/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/images/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb \
   -H "X-User-Id: 11111111-1111-1111-1111-111111111111" -H "X-User-Role: ROLE_ADMIN"
 ```
 
@@ -293,5 +301,5 @@ Frontend → API Gateway (8080) ──[X-User-Id, X-User-Name, X-User-Role]─�
 ```
 
 Bao gồm:
-- `NewsControllerWebMvcTest` — kiểm tra `GET /api/news` & `/published` qua MockMvc.
+- `NewsControllerWebMvcTest` — kiểm tra `GET /api/v1/news` & `/published` qua MockMvc.
 - `BookstoreNewsServiceApplicationTests.contextLoads` — boot context với H2 in-memory (RabbitMQ auto-config đã exclude).
