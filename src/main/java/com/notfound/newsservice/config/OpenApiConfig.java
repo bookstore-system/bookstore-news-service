@@ -22,7 +22,7 @@ public class OpenApiConfig {
                         .version("1.0")
                         .description("""
                                 API tin tức (`/api/v1/news`). **GET** công khai không cần header. Thao tác **Admin** cần \
-                                `X-User-Role: ROLE_ADMIN`; một số API cần thêm `X-User-Id` (UUID) và tùy chọn \
+                                `X-User-Role: ADMIN` hoặc `ROLE_ADMIN`; một số API cần thêm `X-User-Id` (UUID) và tùy chọn \
                                 `X-User-Name` (tên hiển thị). Dùng **Authorize** trên Swagger UI để thử header."""))
                 .components(new Components()
                         .addSecuritySchemes(HEADER_USER_ID, new SecurityScheme()
@@ -34,7 +34,7 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)
                                 .name("X-User-Role")
-                                .description("ROLE_ADMIN cho CRUD / publish / upload ảnh"))
+                                .description("ADMIN hoặc ROLE_ADMIN cho CRUD / publish / upload ảnh"))
                         .addSecuritySchemes(HEADER_USER_NAME, new SecurityScheme()
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)

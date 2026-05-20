@@ -243,7 +243,7 @@ Thay `localhost:8089` bằng `localhost:8080` và thay header `X-User-Id`/`X-Use
 | 200 | 200 | Thành công |
 | 400 | 400 | Validation lỗi (title rỗng, content rỗng, category rỗng) |
 | 401 | 401 | Thiếu header `X-User-Id` ở endpoint cần auth |
-| 403 | 403 | Endpoint admin nhưng `X-User-Role` không phải `ROLE_ADMIN` |
+| 403 | 403 | Endpoint admin nhưng `X-User-Role` không phải `ADMIN` / `ROLE_ADMIN` |
 | 404 | 404 | News id không tồn tại |
 | 413 | 413 | File upload > 10MB |
 | 500 | 500 | Lỗi không lường trước |
@@ -256,7 +256,18 @@ Thay `localhost:8089` bằng `localhost:8080` và thay header `X-User-Id`/`X-Use
 | Upload ảnh trả URL `placehold.co` | Cloudinary chưa cấu hình | Set `CLOUDINARY_*` env vars rồi restart |
 | Lỗi `MaxUploadSizeExceededException` | File > 10MB | Tăng `spring.servlet.multipart.max-file-size` trong `application.yaml` |
 | `getNewsById` luôn 404 | DB rỗng / sai bookstore_news | Tạo dữ liệu mẫu hoặc kiểm tra DDL_AUTO=update |
-| FE bắn 403 cho create | Gateway không gắn header `ROLE_ADMIN` | Kiểm tra JWT claims; user phải có role admin |
+| FE bắn 403 cho create | Gateway gửi role không khớp (ví dụ thiếu header hoặc `ROLE_USER`) | Kiểm tra JWT + header `X-User-Role: ADMIN` hoặc `ROLE_ADMIN` |
+
+### Admin FE — rebuild gateway sau khi sửa whitelist GET news
+
+`Plan-And-Document/docker-compose.dev.yml` build `api-gateway` từ `../mircoservice/bookstore-api-gateway` (image `bookstore-api-gateway:local`).
+
+```powershell
+cd Plan-And-Document
+docker compose -f docker-compose.dev.yml up --build -d api-gateway
+```
+
+Checklist: `/admin/news` (thống kê), `/admin/news/manage` (danh sách), `/admin/news/{id}` (chi tiết), edit, ẩn/hiện, `/news` (public guest).
 
 ## 10. Build & push image
 

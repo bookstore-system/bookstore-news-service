@@ -30,7 +30,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/news")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Tin tức", description = "CRUD & đọc tin; GET công khai; Admin cần `X-User-Role: ROLE_ADMIN`")
+@Tag(name = "Tin tức", description = "CRUD & đọc tin; GET công khai; Admin cần `X-User-Role: ADMIN` hoặc `ROLE_ADMIN`")
 public class NewsController {
 
     private final NewsService newsService;
@@ -147,8 +147,9 @@ public class NewsController {
     @PostMapping
     @Operation(
             summary = "Tạo tin (Admin)",
-            description = "Cần `X-User-Id` (UUID), `X-User-Role: ROLE_ADMIN`, tùy chọn `X-User-Name`. Dùng Authorize trên Swagger UI."
+            description = "Cần `X-User-Id` (UUID), `X-User-Role: ADMIN` hoặc `ROLE_ADMIN`, tùy chọn `X-User-Name`. Dùng Authorize trên Swagger UI."
     )
+    @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ID)
     @SecurityRequirement(name = OpenApiConfig.HEADER_USER_ROLE)
     public ApiResponse<NewsResponse> createNews(@Valid @RequestBody CreateNewsRequest request) {
         UUID userId = userContext.requireUserId();
