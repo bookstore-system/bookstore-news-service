@@ -133,6 +133,18 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
+    @Transactional
+    public NewsResponse getPublishedNewsById(UUID newsId) {
+        News news = newsRepository.findById(newsId).orElseThrow(() -> new NewsNotFoundException(newsId));
+        if (news.getStatus() != NewsStatus.PUBLISHED) {
+            throw new NewsNotFoundException(newsId);
+        }
+        news.setViews(news.getViews() + 1);
+        News saved = newsRepository.save(news);
+        return mapToResponse(saved);
+    }
+
+    @Override
     public Page<NewsResponse> getAllNews(Pageable pageable) {
         return newsRepository.findAllByOrderByCreatedAtDesc(pageable).map(this::mapToResponse);
     }
@@ -140,6 +152,19 @@ public class NewsServiceImpl implements NewsService {
     @Override
     public Page<NewsResponse> getPublishedNews(Pageable pageable) {
         return newsRepository.findByStatusOrderByCreatedAtDesc(NewsStatus.PUBLISHED, pageable)
+                .map(this::mapToResponse);
+    }
+
+    @Override
+    public Page<NewsResponse> searchPublishedNews(String keyword, String category, String tag, Pageable pageable) {
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : "";
+        String cat = (category != null && !category.isBlank()) ? category.trim() : "";
+        String tg = (tag != null && !tag.isBlank()) ? tag.trim() : "";
+        boolean ignoreKeyword = kw.isEmpty();
+        boolean ignoreCategory = cat.isEmpty();
+        boolean ignoreTag = tg.isEmpty();
+        return newsRepository
+                .findPublishedWithFilters(ignoreKeyword, kw, ignoreCategory, cat, ignoreTag, tg, pageable)
                 .map(this::mapToResponse);
     }
 

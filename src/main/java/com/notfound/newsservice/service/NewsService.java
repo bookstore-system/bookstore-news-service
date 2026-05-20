@@ -20,9 +20,13 @@ public interface NewsService {
 
     NewsResponse getNewsById(UUID newsId);
 
+    NewsResponse getPublishedNewsById(UUID newsId);
+
     Page<NewsResponse> getAllNews(Pageable pageable);
 
     Page<NewsResponse> getPublishedNews(Pageable pageable);
+
+    Page<NewsResponse> searchPublishedNews(String keyword, String category, String tag, Pageable pageable);
 
     Page<NewsResponse> getNewsByAuthor(UUID authorId, Pageable pageable);
 

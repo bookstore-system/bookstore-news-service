@@ -21,7 +21,7 @@ public class OpenApiConfig {
                         .title("Bookstore News Service API")
                         .version("1.0")
                         .description("""
-                                API tin tức (`/api/v1/news`). **GET** công khai không cần header. Thao tác **Admin** cần \
+                                API tin tức (`/api/v1/news`). **Guest**: `GET /published`, `GET /{id}` (chỉ tin PUBLISHED). **Admin** cần \
                                 `X-User-Role: ADMIN` hoặc `ROLE_ADMIN`; một số API cần thêm `X-User-Id` (UUID) và tùy chọn \
                                 `X-User-Name` (tên hiển thị). Dùng **Authorize** trên Swagger UI để thử header."""))
                 .components(new Components()

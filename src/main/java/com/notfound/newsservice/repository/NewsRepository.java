@@ -78,4 +78,22 @@ public interface NewsRepository extends JpaRepository<News, UUID> {
 
     @Query("SELECT n FROM News n WHERE LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<News> searchByTitleForAdmin(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT n FROM News n
+            WHERE n.status = com.notfound.newsservice.model.enums.NewsStatus.PUBLISHED
+            AND (:ignoreCategory = true OR n.category = :category)
+            AND (:ignoreTag = true OR LOWER(n.tagsSearchable) LIKE LOWER(CONCAT('%', :tag, '%')))
+            AND (:ignoreKeyword = true
+                OR LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR LOWER(COALESCE(n.summary, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            """)
+    Page<News> findPublishedWithFilters(
+            @Param("ignoreKeyword") boolean ignoreKeyword,
+            @Param("keyword") String keyword,
+            @Param("ignoreCategory") boolean ignoreCategory,
+            @Param("category") String category,
+            @Param("ignoreTag") boolean ignoreTag,
+            @Param("tag") String tag,
+            Pageable pageable);
 }
