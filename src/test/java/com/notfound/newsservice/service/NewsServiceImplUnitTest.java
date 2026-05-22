@@ -168,6 +168,25 @@ class NewsServiceImplUnitTest {
     }
 
     @Test
+    void getPublishedNewsById_onlyPublished() {
+        News news = sampleNews(NewsStatus.PUBLISHED);
+        news.setViews(5L);
+        when(newsRepository.findById(NEWS_ID)).thenReturn(Optional.of(news));
+        when(newsRepository.save(news)).thenAnswer(inv -> inv.getArgument(0));
+
+        NewsResponse response = newsService.getPublishedNewsById(NEWS_ID);
+
+        assertEquals(6L, response.getViews());
+    }
+
+    @Test
+    void getPublishedNewsById_draft_throwsNotFound() {
+        when(newsRepository.findById(NEWS_ID)).thenReturn(Optional.of(sampleNews(NewsStatus.DRAFT)));
+
+        assertThrows(NewsNotFoundException.class, () -> newsService.getPublishedNewsById(NEWS_ID));
+    }
+
+    @Test
     void getNewsById_incrementsViews() {
         News news = sampleNews(NewsStatus.PUBLISHED);
         news.setViews(5L);

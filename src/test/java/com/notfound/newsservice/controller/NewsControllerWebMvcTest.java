@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -39,6 +40,7 @@ class NewsControllerWebMvcTest {
     void getAllNews_returnsApiResponse() throws Exception {
         Page<NewsResponse> page = new PageImpl<>(List.of(), Pageable.unpaged(), 0);
         Mockito.when(newsService.getAllNews(any())).thenReturn(page);
+        doNothing().when(userContext).requireAdmin();
 
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
@@ -48,7 +50,7 @@ class NewsControllerWebMvcTest {
     @Test
     void getPublished_returnsApiResponse() throws Exception {
         Page<NewsResponse> page = new PageImpl<>(List.of(), Pageable.unpaged(), 0);
-        Mockito.when(newsService.getPublishedNews(any())).thenReturn(page);
+        Mockito.when(newsService.searchPublishedNews(any(), any(), any(), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/news/published"))
                 .andExpect(status().isOk())

@@ -43,13 +43,14 @@ public class UserContext {
     }
 
     public boolean isAdmin() {
-        return "ROLE_ADMIN".equalsIgnoreCase(getUserRole());
+        String role = getUserRole();
+        return "ROLE_ADMIN".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
     }
 
     public void requireAdmin() {
         if (!isAdmin()) {
             throw new com.notfound.newsservice.exception.ForbiddenException(
-                    "Bạn không có quyền thực hiện thao tác này (yêu cầu ROLE_ADMIN)");
+                    "Bạn không có quyền thực hiện thao tác này (yêu cầu ADMIN hoặc ROLE_ADMIN)");
         }
     }
 }
