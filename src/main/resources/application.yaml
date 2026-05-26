@@ -1,3 +1,15 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: bookstore-news-service
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+    tags-sorter: alpha
+    operations-sorter: alpha
+
