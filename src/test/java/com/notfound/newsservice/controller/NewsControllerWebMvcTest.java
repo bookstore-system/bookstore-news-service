@@ -12,14 +12,17 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,6 +56,28 @@ class NewsControllerWebMvcTest {
         Mockito.when(newsService.searchPublishedNews(any(), any(), any(), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/news/published"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void recordTagSearch_returnsApiResponse() throws Exception {
+        mockMvc.perform(post("/api/v1/news/tag-searches")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tag": "Unity"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void getPopularTags_returnsApiResponse() throws Exception {
+        Mockito.when(newsService.getPopularTags(anyInt())).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/news/popular-tags"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

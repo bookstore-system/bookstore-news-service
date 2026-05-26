@@ -19,17 +19,25 @@ public class UserContext {
 
     private final HttpServletRequest request;
 
-    public UUID requireUserId() {
+    public UUID getOptionalUserId() {
         String raw = request.getHeader(HEADER_USER_ID);
         if (raw == null || raw.isBlank()) {
-            throw new UnauthorizedException("Vui lòng đăng nhập (thiếu header X-User-Id từ Gateway)");
+            return null;
         }
         try {
             return UUID.fromString(raw.trim());
         } catch (IllegalArgumentException ex) {
-            log.warn("X-User-Id không hợp lệ: {}", raw);
-            throw new UnauthorizedException("X-User-Id không hợp lệ");
+            log.warn("Bỏ qua X-User-Id không hợp lệ ở public endpoint: {}", raw);
+            return null;
         }
+    }
+
+    public UUID requireUserId() {
+        UUID userId = getOptionalUserId();
+        if (userId == null) {
+            throw new UnauthorizedException("Vui lòng đăng nhập (thiếu header X-User-Id từ Gateway)");
+        }
+        return userId;
     }
 
     public String getUserName() {

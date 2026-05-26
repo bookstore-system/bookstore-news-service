@@ -1,11 +1,13 @@
 package com.notfound.newsservice.controller;
 
 import com.notfound.newsservice.model.dto.request.CreateNewsRequest;
+import com.notfound.newsservice.model.dto.request.NewsTagSearchRequest;
 import com.notfound.newsservice.model.dto.request.UpdateNewsRequest;
 import com.notfound.newsservice.model.dto.response.ApiResponse;
 import com.notfound.newsservice.model.dto.response.NewsCountResponse;
 import com.notfound.newsservice.model.dto.response.NewsResponse;
 import com.notfound.newsservice.model.dto.response.NewsStatsResponse;
+import com.notfound.newsservice.model.dto.response.PopularNewsTagResponse;
 import com.notfound.newsservice.model.enums.NewsStatus;
 import com.notfound.newsservice.service.NewsService;
 import com.notfound.newsservice.config.OpenApiConfig;
@@ -80,6 +82,24 @@ public class NewsController {
 
         Page<NewsResponse> result = newsService.searchPublishedNews(keyword, category, tag, pageable);
         return ApiResponse.success("Lấy tin đã xuất bản", result);
+    }
+
+    @PostMapping("/tag-searches")
+    @Operation(summary = "Ghi nhận lượt tìm theo tag (Guest/User)")
+    public ApiResponse<Void> recordTagSearch(
+            @Valid @RequestBody NewsTagSearchRequest request,
+            @RequestHeader(value = "X-Guest-Session-Id", required = false) String guestSessionId
+    ) {
+        newsService.recordTagSearch(request, userContext.getOptionalUserId(), guestSessionId);
+        return ApiResponse.success("Đã ghi nhận lượt tìm theo tag", null);
+    }
+
+    @GetMapping("/popular-tags")
+    @Operation(summary = "Lấy tags phổ biến từ search thật (Guest)")
+    public ApiResponse<List<PopularNewsTagResponse>> getPopularTags(
+            @RequestParam(defaultValue = "6") int limit
+    ) {
+        return ApiResponse.success("Lấy tags phổ biến thành công", newsService.getPopularTags(limit));
     }
 
     @GetMapping("/{id}")

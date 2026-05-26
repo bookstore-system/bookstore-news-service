@@ -1,9 +1,11 @@
 package com.notfound.newsservice.service;
 
 import com.notfound.newsservice.model.dto.request.CreateNewsRequest;
+import com.notfound.newsservice.model.dto.request.NewsTagSearchRequest;
 import com.notfound.newsservice.model.dto.request.UpdateNewsRequest;
 import com.notfound.newsservice.model.dto.response.NewsResponse;
 import com.notfound.newsservice.model.dto.response.NewsStatsResponse;
+import com.notfound.newsservice.model.dto.response.PopularNewsTagResponse;
 import com.notfound.newsservice.model.enums.NewsStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -61,4 +63,8 @@ public interface NewsService {
     void deleteNewsImage(UUID newsId, Long imageId);
 
     NewsStatsResponse getNewsStatistics();
+
+    void recordTagSearch(NewsTagSearchRequest request, UUID userId, String guestSessionId);
+
+    List<PopularNewsTagResponse> getPopularTags(int limit);
 }
