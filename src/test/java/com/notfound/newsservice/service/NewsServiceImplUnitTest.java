@@ -5,15 +5,20 @@ import com.notfound.newsservice.exception.BadRequestException;
 import com.notfound.newsservice.exception.ForbiddenException;
 import com.notfound.newsservice.exception.NewsNotFoundException;
 import com.notfound.newsservice.model.dto.request.CreateNewsRequest;
+import com.notfound.newsservice.model.dto.request.NewsTagSearchRequest;
 import com.notfound.newsservice.model.dto.request.NewsImageRequest;
 import com.notfound.newsservice.model.dto.request.UpdateNewsRequest;
 import com.notfound.newsservice.model.dto.response.NewsResponse;
 import com.notfound.newsservice.model.dto.response.NewsStatsResponse;
+import com.notfound.newsservice.model.dto.response.PopularNewsTagResponse;
 import com.notfound.newsservice.model.entity.News;
 import com.notfound.newsservice.model.entity.NewsImage;
+import com.notfound.newsservice.model.entity.NewsTagSearch;
 import com.notfound.newsservice.model.enums.NewsStatus;
 import com.notfound.newsservice.repository.NewsImageRepository;
 import com.notfound.newsservice.repository.NewsRepository;
+import com.notfound.newsservice.repository.NewsTagSearchRepository;
+import com.notfound.newsservice.repository.PopularNewsTagProjection;
 import com.notfound.newsservice.service.impl.NewsServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +59,8 @@ class NewsServiceImplUnitTest {
     @Mock
     NewsImageRepository newsImageRepository;
     @Mock
+    NewsTagSearchRepository newsTagSearchRepository;
+    @Mock
     ImageService imageService;
 
     NewsServiceImpl newsService;
@@ -63,6 +70,7 @@ class NewsServiceImplUnitTest {
         newsService = new NewsServiceImpl(
                 newsRepository,
                 newsImageRepository,
+                newsTagSearchRepository,
                 imageService,
                 new ObjectMapper()
         );
@@ -302,6 +310,66 @@ class NewsServiceImplUnitTest {
         assertEquals(1, stats.getNewsByCategory().size());
         assertEquals("Tech", stats.getNewsByCategory().get(0).getCategory());
         assertEquals(1, stats.getTopViewedNews().size());
+    }
+
+    @Test
+    void recordTagSearch_skipsDuplicateForUserWithinWindow() {
+        when(newsTagSearchRepository.existsByUserIdAndNormalizedTagAndSearchedAtAfter(eq(AUTHOR_ID), eq("unity"), any()))
+                .thenReturn(true);
+
+        newsService.recordTagSearch(
+                NewsTagSearchRequest.builder().tag("Unity").build(),
+                AUTHOR_ID,
+                "guest-1"
+        );
+
+        verify(newsTagSearchRepository, org.mockito.Mockito.never()).save(any(NewsTagSearch.class));
+    }
+
+    @Test
+    void recordTagSearch_persistsForGuestWhenNotDuplicate() {
+        when(newsTagSearchRepository.existsByGuestSessionIdAndNormalizedTagAndSearchedAtAfter(eq("guest-1"), eq("unity"), any()))
+                .thenReturn(false);
+
+        newsService.recordTagSearch(
+                NewsTagSearchRequest.builder().tag("  unity ").build(),
+                null,
+                "guest-1"
+        );
+
+        ArgumentCaptor<NewsTagSearch> captor = ArgumentCaptor.forClass(NewsTagSearch.class);
+        verify(newsTagSearchRepository).save(captor.capture());
+        assertEquals("Unity", captor.getValue().getTag());
+        assertEquals("unity", captor.getValue().getNormalizedTag());
+        assertEquals("guest-1", captor.getValue().getGuestSessionId());
+    }
+
+    @Test
+    void getPopularTags_mapsRepositoryProjection() {
+        PopularNewsTagProjection projection = new PopularNewsTagProjection() {
+            @Override
+            public String getTag() {
+                return "Unity";
+            }
+
+            @Override
+            public String getNormalizedTag() {
+                return "unity";
+            }
+
+            @Override
+            public Long getSearchCount() {
+                return 5L;
+            }
+        };
+
+        when(newsTagSearchRepository.findPopularTags(any())).thenReturn(List.of(projection));
+
+        List<PopularNewsTagResponse> response = newsService.getPopularTags(6);
+
+        assertEquals(1, response.size());
+        assertEquals("Unity", response.get(0).getTag());
+        assertEquals(5L, response.get(0).getSearchCount());
     }
 
     private News sampleNews(NewsStatus status) {

@@ -6,17 +6,21 @@ import com.notfound.newsservice.exception.BadRequestException;
 import com.notfound.newsservice.exception.ForbiddenException;
 import com.notfound.newsservice.exception.NewsNotFoundException;
 import com.notfound.newsservice.model.dto.request.CreateNewsRequest;
+import com.notfound.newsservice.model.dto.request.NewsTagSearchRequest;
 import com.notfound.newsservice.model.dto.request.UpdateNewsRequest;
 import com.notfound.newsservice.model.dto.response.NewsImageResponse;
 import com.notfound.newsservice.model.dto.response.NewsMetadata;
 import com.notfound.newsservice.model.dto.response.NewsResponse;
 import com.notfound.newsservice.model.dto.response.NewsStatsResponse;
+import com.notfound.newsservice.model.dto.response.PopularNewsTagResponse;
 import com.notfound.newsservice.model.dto.response.ProcessedNewsContent;
 import com.notfound.newsservice.model.entity.News;
 import com.notfound.newsservice.model.entity.NewsImage;
+import com.notfound.newsservice.model.entity.NewsTagSearch;
 import com.notfound.newsservice.model.enums.NewsStatus;
 import com.notfound.newsservice.repository.NewsImageRepository;
 import com.notfound.newsservice.repository.NewsRepository;
+import com.notfound.newsservice.repository.NewsTagSearchRepository;
 import com.notfound.newsservice.service.ImageService;
 import com.notfound.newsservice.service.NewsService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -45,8 +50,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class NewsServiceImpl implements NewsService {
 
+    private static final int DEFAULT_POPULAR_TAG_LIMIT = 6;
+    private static final int MAX_POPULAR_TAG_LIMIT = 20;
+    private static final long TAG_SEARCH_DEDUPE_MINUTES = 30L;
+
     private final NewsRepository newsRepository;
     private final NewsImageRepository newsImageRepository;
+    private final NewsTagSearchRepository newsTagSearchRepository;
     private final ImageService imageService;
     private final ObjectMapper objectMapper;
 
@@ -442,6 +452,63 @@ public class NewsServiceImpl implements NewsService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public void recordTagSearch(NewsTagSearchRequest request, UUID userId, String guestSessionId) {
+        String cleanedTag = cleanTag(request.getTag());
+        if (cleanedTag.isEmpty()) {
+            throw new BadRequestException("Tag không được để trống");
+        }
+
+        String normalizedTag = normalizeTag(cleanedTag);
+        LocalDateTime since = LocalDateTime.now().minusMinutes(TAG_SEARCH_DEDUPE_MINUTES);
+        String resolvedGuestSessionId = guestSessionId == null || guestSessionId.isBlank()
+                ? null
+                : guestSessionId.trim();
+
+        boolean isDuplicate;
+        if (userId != null) {
+            isDuplicate = newsTagSearchRepository.existsByUserIdAndNormalizedTagAndSearchedAtAfter(
+                    userId,
+                    normalizedTag,
+                    since
+            );
+        } else if (resolvedGuestSessionId != null) {
+            isDuplicate = newsTagSearchRepository.existsByGuestSessionIdAndNormalizedTagAndSearchedAtAfter(
+                    resolvedGuestSessionId,
+                    normalizedTag,
+                    since
+            );
+        } else {
+            isDuplicate = false;
+        }
+
+        if (isDuplicate) {
+            log.debug("Bỏ qua tag search trùng: tag='{}', userId={}, guestSessionId={}",
+                    normalizedTag, userId, resolvedGuestSessionId);
+            return;
+        }
+
+        newsTagSearchRepository.save(NewsTagSearch.builder()
+                .tag(toDisplayTag(normalizedTag))
+                .normalizedTag(normalizedTag)
+                .userId(userId)
+                .guestSessionId(userId == null ? resolvedGuestSessionId : null)
+                .build());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PopularNewsTagResponse> getPopularTags(int limit) {
+        int safeLimit = limit <= 0 ? DEFAULT_POPULAR_TAG_LIMIT : Math.min(limit, MAX_POPULAR_TAG_LIMIT);
+        return newsTagSearchRepository.findPopularTags(PageRequest.of(0, safeLimit)).stream()
+                .map(row -> PopularNewsTagResponse.builder()
+                        .tag(row.getTag())
+                        .searchCount(row.getSearchCount())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     private NewsStatus parseStatus(String raw, NewsStatus fallback) {
         if (raw == null || raw.isBlank()) return fallback;
         try {
@@ -450,6 +517,24 @@ public class NewsServiceImpl implements NewsService {
             log.warn("Status không hợp lệ '{}' — dùng fallback {}", raw, fallback);
             return fallback;
         }
+    }
+
+    private String cleanTag(String rawTag) {
+        if (rawTag == null) {
+            return "";
+        }
+        return rawTag.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizeTag(String rawTag) {
+        return cleanTag(rawTag).toLowerCase(Locale.ROOT);
+    }
+
+    private String toDisplayTag(String normalizedTag) {
+        if (normalizedTag == null || normalizedTag.isBlank()) {
+            return "";
+        }
+        return Character.toUpperCase(normalizedTag.charAt(0)) + normalizedTag.substring(1);
     }
 
     private ProcessedNewsContent processContent(String html) {
